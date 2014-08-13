@@ -124,10 +124,45 @@ function simplify(points, tolerance, highestQuality) {
     return points;
 }
 
+// accept and return an ESRI ArcGIS JSAPI Geometry object
+function simplifyEsriGeometry(geom, tolerance, highestQuality) {
+    var convert = function (rings) {
+        var newRings = [];
+        _.each(rings, function (ring) {
+            var points = [], newRing;
+            _.each(ring, function (ptArr) {
+                points.push(_.object(['x', 'y'], ptArr));
+            })
+            newRing = simplify(points, tolerance, highestQuality);
+            ring = [];
+            _.each(newRing, function (ptObj) {
+                ring.push(_.values(ptObj));
+            });
+            newRings.push(ring);
+        });
+        return newRings;
+    }
+    switch (geom.type) {
+        case "polygon":
+            geom.rings = convert(geom.rings);
+            break;
+        case "polyline":
+            geom.paths = convert(geom.paths);
+            break;
+
+    }
+    return geom;
+}
+
 // export as AMD module / Node module / browser or worker variable
 if (typeof define === 'function' && define.amd) define(function() { return simplify; });
 else if (typeof module !== 'undefined') module.exports = simplify;
 else if (typeof self !== 'undefined') self.simplify = simplify;
 else window.simplify = simplify;
+
+if (typeof define === 'function' && define.amd) define(function () { return simplifyEsriGeometry; });
+else if (typeof module !== 'undefined') module.exports = simplifyEsriGeometry;
+else if (typeof self !== 'undefined') self.simplifyEsriGeometry = simplifyEsriGeometry;
+else window.simplifyEsriGeometry = simplifyEsriGeometry;
 
 })();
